@@ -4,7 +4,6 @@ from logging.handlers import RotatingFileHandler
 import ldap3
 from flask import Flask, render_template, request, redirect, session, flash
 from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE
-from ldap3.extend.microsoft.modifyPassword import ad_modify_password
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -79,7 +78,6 @@ def change_ad_password(username, new_password):
         with Connection(server, user=admin_dn, password=admin_password, auto_bind=True) as conn:
             logger.debug(f"Connected as admin: {admin_dn}")
             
-            # Правильное изменение пароля с использованием modify
             unicode_password = f'"{new_password}"'.encode('utf-16-le')
             changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])]}
             
