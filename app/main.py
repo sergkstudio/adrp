@@ -12,7 +12,7 @@ def login():
         password = request.form['password']
         if authenticate_user(username, password):
             session['username'] = username
-            return redirect(url_for('change_password'))
+            return redirect(url_for('change_password_route'))
         else:
             return "Invalid credentials", 401
     return render_template('login.html')
