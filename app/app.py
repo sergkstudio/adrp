@@ -5,7 +5,6 @@ import ldap3
 from flask import Flask, render_template, request, redirect, session, flash
 from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE
 from dotenv import load_dotenv
-import ssl
 
 load_dotenv()
 
@@ -44,7 +43,7 @@ def ad_auth(username, password):
     logger.debug(f"AD_SERVER: {server_address}, DOMAIN_DN: {domain_dn}")
 
     try:
-        server = Server(server_address, use_ssl=True, get_info=ALL, tls=ldap3.Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLSv1_2))
+        server = Server(server_address, use_ssl=True, get_info=ALL)
         user_dn = f"CN={username},{domain_dn}"
         logger.debug(f"Trying to bind with DN: {user_dn}")
 
