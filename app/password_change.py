@@ -54,17 +54,9 @@ def change_password(username, new_password, old_password):
             logger.error(f"Ошибка изменения пароля LDAP: {conn.result}")
             return False, "Не удалось изменить пароль в Active Directory"
 
-#    except LDAPException as e:
-#        logger.error(f"Ошибка LDAP: {str(e)}")
-#        return False, "Ошибка связи с Active Directory"
     except LDAPException as e:
-    if 'WILL_NOT_PERFORM' in str(e):
-        error_msg = "AD отклонил операцию. Возможные причины:\n"
-        error_msg += "- Пароль не соответствует требованиям сложности\n"
-        error_msg += "- Недостаточно прав\n"
-        error_msg += "- Слишком частая смена пароля"
-        logger.error(error_msg)
-        return False, error_msg
+        logger.error(f"Ошибка LDAP: {str(e)}")
+        return False, "Ошибка связи с Active Directory"
         
     except Exception as e:
         logger.error(f"Неожиданная ошибка: {str(e)}")
