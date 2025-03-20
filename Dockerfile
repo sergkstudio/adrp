@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Копируем .env вместе с другими файлами
 COPY requirements.txt .
-COPY .env .  # В продакшене лучше использовать секреты
+COPY .env .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
