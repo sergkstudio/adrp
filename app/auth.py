@@ -21,5 +21,5 @@ def authenticate_user(username, password):
         )
         return conn.bind()
     except Exception as e:
-        print(f"Auth error: {e}")
+        print(f"Ошибка аутентификации: {e}")
         return False

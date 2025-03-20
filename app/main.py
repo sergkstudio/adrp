@@ -1,9 +1,11 @@
 from flask import Flask, redirect, url_for, session, request, render_template, flash
 from auth import authenticate_user
 from password_change import change_password
+import os
+import logging
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_secret_key')
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -35,11 +37,6 @@ def change_password_route():
         return redirect(url_for('change_password_route'))
     
     return render_template('change_password.html')
-
-import logging
-
-app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY')
 
 # Настройка логирования
 logging.basicConfig(
