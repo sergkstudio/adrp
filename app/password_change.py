@@ -1,83 +1,79 @@
-import re
-import logging
-from ldap3 import Connection
-from ldap3.core.exceptions import LDAPException
-from database import save_password
-from auth import get_ldap_connection
+from flask import Flask, redirect, url_for, session, request, render_template, flash
+from auth import authenticate_user, is_admin_user
+from password_change import change_password, admin_change_password
 import os
+import logging
 
-logger = logging.getLogger(__name__)
+app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_secret_key_here')
 
-def is_password_secure(password):
-    checks = {
-        'length': len(password) >= 12,
-        'lower': re.search(r'[a-z]', password) is not None,
-        'upper': re.search(r'[A-Z]', password) is not None,
-        'digit': re.search(r'\d', password) is not None,
-        'special': re.search(r'[!@#$%^&*(),.?":{}|<>]', password) is not None
-    }
-    logger.debug(f"Проверка пароля: {checks}")
-    return all(checks.values())
-
-def admin_change_password(target_username, new_password):
-    try:
-        if not is_password_secure(new_password):
-            logger.error("Пароль не соответствует требованиям безопасности")
-            return False, "Пароль не соответствует требованиям безопасности"
-
-        # Получаем данные администратора из переменных окружения
-        admin_username = os.getenv('AD_ADMIN_USER')
-        admin_password = os.getenv('AD_ADMIN_PASSWORD')
+@app.route('/', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
         
-        domain_components = os.getenv('AD_DOMAIN').split('.')
-        base_dn = ','.join([f"DC={component}" for component in domain_components])
-        
-        # Формируем DN целевого пользователя и администратора
-        target_user_dn = f"CN={target_username},CN=Users,{base_dn}"
-        admin_user_dn = f"CN={admin_username},CN=Users,{base_dn}"
-        
-        logger.debug(f"Попытка смены пароля для: {target_user_dn}")
-        logger.debug(f"Используется администратор: {admin_user_dn}")
+        if authenticate_user(username, password):
+            session['username'] = username
+            session['is_admin'] = is_admin_user(username)  # Проверка прав администратора
+            return redirect(url_for('profile'))
+        else:
+            flash('Неверные учетные данные', 'error')
+            return redirect(url_for('login'))
+    
+    return render_template('login.html')
 
-        # Подключаемся как администратор
-        with Connection(
-            get_ldap_connection(),
-            user=admin_user_dn,
-            password=admin_password,
-            authentication="SIMPLE"
-        ) as conn:
-            if not conn.bind():
-                logger.error("Ошибка аутентификации администратора")
-                return False, "Ошибка аутентификации администратора"
-            
-            logger.info("Успешная аутентификация администратора")
-            
-            # Изменяем пароль без старого пароля
-            result = conn.extend.microsoft.modify_password(
-                target_user_dn, 
-                new_password
-            )
-            
-            if result:
-                logger.info("Пароль успешно изменен в AD")
-                try:
-                    # Сохраняем в базу данных при необходимости
-                    save_password(target_username, new_password)
-                    return True, "Пароль успешно изменен"
-                except Exception as db_error:
-                    logger.error(f"Ошибка сохранения в базе данных: {str(db_error)}")
-                    return False, "Пароль изменен в AD, но не удалось сохранить в БД"
-            
-            logger.error(f"Ошибка изменения пароля: {conn.result}")
-            return False, "Не удалось изменить пароль в Active Directory"
+@app.route('/profile')
+def profile():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    return render_template('profile.html', 
+                         username=session['username'],
+                         is_admin=session.get('is_admin', False))
 
-    except LDAPException as e:
-        error_message = f"Ошибка LDAP: {str(e)}"
-        if 'insufficientAccessRights' in str(e):
-            error_message += " | Недостаточно прав администратора"
-        logger.error(error_message)
-        return False, error_message
+@app.route('/change-password', methods=['GET', 'POST'])
+def change_password_route():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        username = session['username']
         
-    except Exception as e:
-        logger.error(f"Неожиданная ошибка: {str(e)}")
-        return False, "Техническая ошибка при смене пароля"
+        success, message = change_password(username, new_password, old_password)
+        flash(message, 'success' if success else 'error')
+        return redirect(url_for('change_password_route'))
+    
+    return render_template('user_change_password.html')
+
+@app.route('/admin/change-password', methods=['GET', 'POST'])
+def admin_change_password_route():
+    if not session.get('is_admin'):
+        flash('Доступ запрещен', 'error')
+        return redirect(url_for('profile'))
+    
+    if request.method == 'POST':
+        target_username = request.form.get('target_username')
+        new_password = request.form.get('new_password')
+        
+        success, message = admin_change_password(target_username, new_password)
+        flash(message, 'success' if success else 'error')
+        return redirect(url_for('admin_change_password_route'))
+    
+    return render_template('admin_change_password.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
