@@ -1,6 +1,7 @@
 import re
 import logging
-from ldap3 import Connection, LDAPException
+from ldap3 import Connection
+from ldap3.core.exceptions import LDAPException
 from database import save_password
 from auth import get_ldap_connection
 import os
