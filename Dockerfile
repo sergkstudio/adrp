@@ -2,14 +2,15 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Копируем .env вместе с другими файлами
-COPY requirements.txt .
-COPY .env .
+RUN apt-get update && apt-get install -y \
+    libldap2-dev \
+    libsasl2-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 5000
-
-CMD ["python", "./app/main.py"]
+CMD ["python", "app.py"]
