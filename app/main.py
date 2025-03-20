@@ -18,7 +18,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/change_password', methods=['GET', 'POST'])
-def change_password():
+def change_password_route():
     if 'username' not in session:
         return redirect(url_for('login'))
     
