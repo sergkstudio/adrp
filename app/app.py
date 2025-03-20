@@ -3,9 +3,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 import ldap3
 from flask import Flask, render_template, request, redirect, session, flash
-from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE, Tls
+from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE
 from dotenv import load_dotenv
-import ssl
 
 load_dotenv()
 
@@ -48,7 +47,7 @@ def ad_auth(username, password):
         user_dn = f"CN={username},{domain_dn}"
         logger.debug(f"Trying to bind with DN: {user_dn}")
 
-        conn = Connection(server, user=user_dn, password=password, auto_bind=True, tls=Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLSv1_2))
+        conn = Connection(server, user=user_dn, password=password, auto_bind=True)
         if conn.result['result'] == 0:
             logger.info(f"Successful authentication for: {username}")
             return True
@@ -76,7 +75,7 @@ def change_ad_password(username, new_password):
         
         logger.debug(f"Connecting with admin DN: {admin_dn}")
         
-        with Connection(server, user=admin_dn, password=admin_password, auto_bind=True, tls=Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLSv1_2)) as conn:
+        with Connection(server, user=admin_dn, password=admin_password, auto_bind=True) as conn:
             logger.debug(f"Connected as admin: {admin_dn}")
             
             unicode_password = f'"{new_password}"'.encode('utf-16-le')
