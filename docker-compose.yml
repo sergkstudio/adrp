@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  password-reset:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - ./:/app
+    restart: unless-stopped
