@@ -117,4 +117,26 @@ def login():
 
 @app.route('/change_password', methods=['GET', 'POST'])
 def change_password():
-    # ... (остается без изменений)
+    if 'username' not in session:
+        return redirect('/')
+    
+    if request.method == 'POST':
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+        
+        if new_password != confirm_password:
+            flash('Passwords do not match')
+            return redirect('/change_password')
+        
+        if change_ad_password(session['username'], new_password):
+            write_log(session['username'], new_password)
+            session.pop('username')
+            flash('Password changed successfully')
+            return redirect('/')
+        else:
+            flash('Failed to change password')
+    
+    return render_template('change_password.html')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
