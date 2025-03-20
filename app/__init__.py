@@ -6,6 +6,7 @@ def create_app():
     # app.config.from_envvar('APP_SETTINGS')
 
     with app.app_context():
-        from . import routes
+        from .routes import main
+        app.register_blueprint(main)
 
     return app
