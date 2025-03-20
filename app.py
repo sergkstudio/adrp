@@ -21,14 +21,14 @@ def change_ad_password(username, new_password):
             auto_bind=True
         )
         
-        # Используем AD_BASE_DN из .env
         user_dn = f"CN={username},CN=Users,{os.getenv('AD_BASE_DN')}"
         
         unicode_pass = f'"{new_password}"'.encode('utf-16-le')
         
+        # Исправленная строка:
         admin_conn.modify(
             user_dn,
-            {'unicodePwd': [(MODIFY_REPLACE, [unicode_pass])}
+            {'unicodePwd': [(MODIFY_REPLACE, [unicode_pass])]}
         )
         
         if admin_conn.result['result'] == 0:
