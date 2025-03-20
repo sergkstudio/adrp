@@ -19,7 +19,7 @@ def is_password_secure(password):
     logger.debug(f"Проверка пароля: {checks}")
     return all(checks.values())
 
-def change_password(username, new_password, old_password):
+def change_password_route(username, new_password, old_password):
     try:
         if not is_password_secure(new_password):
             logger.error("Пароль не соответствует требованиям безопасности")
