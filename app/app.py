@@ -43,7 +43,7 @@ def ad_auth(username, password):
     logger.debug(f"AD_SERVER: {server_address}, DOMAIN_DN: {domain_dn}")
 
     try:
-        server = Server(server_address, get_info=ALL)
+        server = Server(server_address, use_ssl=True, get_info=ALL)
         user_dn = f"CN={username},{domain_dn}"
         logger.debug(f"Trying to bind with DN: {user_dn}")
 
@@ -69,7 +69,7 @@ def change_ad_password(username, new_password):
     logger.debug(f"Attempting password change for: {username}")
     
     try:
-        server = Server(server_address)
+        server = Server(server_address, use_ssl=True)
         admin_dn = f"CN={admin_user},{domain_dn}"
         user_dn = f"CN={username},{domain_dn}"
         
@@ -82,7 +82,6 @@ def change_ad_password(username, new_password):
             changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])]}
             
             logger.debug(f"Attempting password modification for: {user_dn}")
-            logger.debug(f"Password change request: {changes}")
             
             if conn.modify(user_dn, changes):
                 logger.info(f"Password changed successfully for: {username}")
