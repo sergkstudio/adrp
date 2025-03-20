@@ -55,6 +55,8 @@ def change_password(username, new_password, old_password):
 
     except LDAPException as e:
         logger.error(f"LDAP error: {str(e)}")
-        except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}")
+        return False, "Active Directory communication error"
+        
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
         return False, "Technical error during password change"
