@@ -10,14 +10,11 @@ COPY requirements.txt .
 # Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем исходный код приложения
+# Копируем содержимое текущей директории в контейнер
 COPY . .
 
-# Создаем базу данных SQLite (если она еще не создана)
-RUN python -c "from models import db; db.create_all()"
-
-# Открываем порт 5000 для Flask
+# Указываем порт, который будет использовать приложение
 EXPOSE 5000
 
-# Запускаем приложение
-CMD ["python", "app.py"]
+# Команда для запуска приложения
+CMD ["python", "./app/main.py"]

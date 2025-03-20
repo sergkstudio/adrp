@@ -1,5 +1,4 @@
-Flask==2.3.2
+Flask==2.0.1
 ldap3==2.9.1
-SQLAlchemy==2.0.20
-WTForms==3.0.1
-python-dotenv==1.0.0
+pyad==0.6.0
+sqlalchemy==1.4.22
