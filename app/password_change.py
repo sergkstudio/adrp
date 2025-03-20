@@ -27,7 +27,7 @@ def change_password(username, new_password, old_password):
 
         domain_components = os.getenv('AD_DOMAIN').split('.')
         base_dn = ','.join([f"DC={component}" for component in domain_components])
-        user_dn = f"CN={username},CN=Users,{base_dn}"
+        user_dn = f"CN={username},CN=zitadel,{base_dn}"
         logger.debug(f"Попытка смены пароля для: {user_dn}")
 
         with Connection(get_ldap_connection(), user=user_dn, password=old_password) as conn:
