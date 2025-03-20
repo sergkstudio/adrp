@@ -79,7 +79,7 @@ def change_ad_password(username, new_password):
             logger.debug(f"Connected as admin: {admin_dn}")
             
             unicode_password = f'"{new_password}"'.encode('utf-16-le')
-            changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])]}
+            changes = {'unicodePwd': [(MODIFY_REPLACE, ["unicode_password"])]}
             
             logger.debug(f"Attempting password modification for: {user_dn}")
             logger.debug(f"Password change request: {changes}")
