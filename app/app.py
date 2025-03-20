@@ -79,7 +79,8 @@ def change_ad_password(username, new_password):
             logger.debug(f"Connected as admin: {admin_dn}")
             
             unicode_password = f'"{new_password}"'.encode('utf-16-le')
-            changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])}
+            # Исправлено здесь ▼
+            changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])]}
             
             logger.debug(f"Attempting password modification for: {user_dn}")
             
@@ -89,6 +90,10 @@ def change_ad_password(username, new_password):
             
             logger.error(f"Password change failed for: {username}. Response: {conn.result}")
             return False
+            
+    except Exception as e:
+        logger.error(f"Password change error for {username}: {str(e)}", exc_info=True)
+        return False
             
     except Exception as e:
         logger.error(f"Password change error for {username}: {str(e)}", exc_info=True)
