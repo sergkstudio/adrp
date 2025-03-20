@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, session, request, render_template
+from flask import Flask, redirect, url_for, session, request, render_template, flash
 from auth import authenticate_user
 from password_change import change_password
 
@@ -17,20 +17,22 @@ def login():
             return "Invalid credentials", 401
     return render_template('login.html')
 
-@app.route('/change_password', methods=['GET', 'POST'])
+@app.route('/change-password', methods=['GET', 'POST'])
 def change_password_route():
     if 'username' not in session:
         return redirect(url_for('login'))
     
     if request.method == 'POST':
-        old_password = request.form['old_password']
-        new_password = request.form['new_password']
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
         username = session['username']
         
-        if change_password(username, new_password, old_password):
-            return "Password changed successfully"
+        success, message = change_password(username, new_password, old_password)
+        if success:
+            flash(message, 'success')
         else:
-            return "Failed to change password", 400
+            flash(message, 'error')
+        return redirect(url_for('change_password_route'))
     
     return render_template('change_password.html')
 
