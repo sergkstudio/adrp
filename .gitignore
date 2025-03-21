@@ -1,4 +1,2 @@
-.env
-__pycache__
-*.pyc
-*.db
+/app/.env
+user_credentials.log

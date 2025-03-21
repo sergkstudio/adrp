@@ -1,15 +1,11 @@
 FROM python:3.9-slim
 
+RUN mkdir -p /app/logs
 WORKDIR /app
 
-# Копируем .env вместе с другими файлами
 COPY requirements.txt .
-COPY .env .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 5000
-
-CMD ["python", "./app/main.py"]
+CMD ["python", "app.py"]
