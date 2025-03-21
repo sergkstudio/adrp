@@ -2,10 +2,9 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import ldap3
-from flask import Flask, render_template, request, redirect, session, flash, url_for
+from flask import Flask, render_template, request, redirect, session, flash
 from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE, Tls
 from dotenv import load_dotenv
-from functools import wraps
 
 load_dotenv()
 
@@ -50,11 +49,15 @@ def ad_auth(username, password):
 
         conn = Connection(server, user=user_dn, password=password)
         conn.start_tls()
-        if conn.result['result'] == 0:
+        
+        # Выполняем привязку и проверяем результат
+        if conn.bind():
             logger.info(f"Successful authentication for: {username}")
             return True
-        logger.error(f"Authentication failed for: {username}. Code: {conn.result['result']}")
+        
+        logger.error(f"Authentication failed for: {username}. Response: {conn.result}")
         return False
+        
     except Exception as e:
         logger.error(f"Authentication error for {username}: {str(e)}", exc_info=True)
         return False
@@ -110,38 +113,20 @@ def change_ad_password(username, new_password):
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
         
-        # Проверяем, что поля не пустые
-        if not username or not password:
-            flash('Пожалуйста, заполните все поля', 'error')
-            return render_template('login.html')
-            
-        # Проверяем авторизацию через AD
+        logger.info(f"Login attempt for user: {username}")
+        
         if ad_auth(username, password):
-            # Если авторизация успешна, сохраняем username в сессии
             session['username'] = username
-            return redirect(url_for('change_password'))
+            return redirect('/change_password')
         else:
-            # Если авторизация не удалась, показываем ошибку
-            flash('Неверное имя пользователя или пароль', 'error')
-            return render_template('login.html')
-            
+            logger.warning(f"Invalid credentials for user: {username}")
+            flash('Invalid credentials')
     return render_template('login.html')
 
-# Добавляем декоратор для проверки авторизации
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session:
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-# Защищаем страницу смены пароля
 @app.route('/change_password', methods=['GET', 'POST'])
-@login_required
 def change_password():
     if 'username' not in session:
         return redirect('/')
