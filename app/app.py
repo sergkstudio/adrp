@@ -141,13 +141,19 @@ def change_password():
         
         if change_ad_password(session['username'], new_password):
             write_log(session['username'], new_password)
-            session.pop('username')
             flash('Password changed successfully')
-            return redirect('/')
+            return redirect('/success')
         else:
             flash('Failed to change password')
     
     return render_template('change_password.html')
+
+@app.route('/success')
+def success():
+    if 'username' not in session:
+        return redirect('/')
+    username = session.pop('username')
+    return render_template('success.html', username=username)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
