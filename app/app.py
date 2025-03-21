@@ -79,6 +79,10 @@ def change_ad_password(username, new_password):
         conn = Connection(server, user=admin_dn, password=admin_password)
         conn.start_tls()
         
+        if not conn.bind():
+            logger.error(f"Bind failed: {conn.result}")
+            return False
+
         logger.debug(f"Connected as admin: {admin_dn}")
         
         unicode_password = f'"{new_password}"'.encode('utf-16-le')
