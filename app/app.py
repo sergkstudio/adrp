@@ -3,7 +3,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import ldap3
 from flask import Flask, render_template, request, redirect, session, flash
-from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE
+from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE, Tls
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -43,11 +43,12 @@ def ad_auth(username, password):
     logger.debug(f"AD_SERVER: {server_address}, DOMAIN_DN: {domain_dn}")
 
     try:
-        server = Server(server_address, use_ssl=True, get_info=ALL)
+        server = Server(server_address, get_info=ALL)
         user_dn = f"CN={username},{domain_dn}"
         logger.debug(f"Trying to bind with DN: {user_dn}")
 
-        conn = Connection(server, user=user_dn, password=password, auto_bind=True)
+        conn = Connection(server, user=user_dn, password=password)
+        conn.start_tls()
         if conn.result['result'] == 0:
             logger.info(f"Successful authentication for: {username}")
             return True
@@ -69,26 +70,33 @@ def change_ad_password(username, new_password):
     logger.debug(f"Attempting password change for: {username}")
     
     try:
-        server = Server(server_address, use_ssl=True)
+        server = Server(server_address)
         admin_dn = f"CN={admin_user},{domain_dn}"
         user_dn = f"CN={username},{domain_dn}"
         
         logger.debug(f"Connecting with admin DN: {admin_dn}")
         
-        with Connection(server, user=admin_dn, password=admin_password, auto_bind=True) as conn:
-            logger.debug(f"Connected as admin: {admin_dn}")
+        conn = Connection(server, user=admin_dn, password=admin_password)
+        conn.start_tls()
+        
+        logger.debug(f"Connected as admin: {admin_dn}")
+        
+        unicode_password = f'"{new_password}"'.encode('utf-16-le')
+        # Исправлено здесь ▼
+        changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])]}
+        
+        logger.debug(f"Attempting password modification for: {user_dn}")
+        
+        if conn.modify(user_dn, changes):
+            logger.info(f"Password changed successfully for: {username}")
+            return True
+        
+        logger.error(f"Password change failed for: {username}. Response: {conn.result}")
+        return False
             
-            unicode_password = f'"{new_password}"'.encode('utf-16-le')
-            changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])]}
-            
-            logger.debug(f"Attempting password modification for: {user_dn}")
-            
-            if conn.modify(user_dn, changes):
-                logger.info(f"Password changed successfully for: {username}")
-                return True
-            
-            logger.error(f"Password change failed for: {username}. Response: {conn.result}")
-            return False
+    except Exception as e:
+        logger.error(f"Password change error for {username}: {str(e)}", exc_info=True)
+        return False
             
     except Exception as e:
         logger.error(f"Password change error for {username}: {str(e)}", exc_info=True)
