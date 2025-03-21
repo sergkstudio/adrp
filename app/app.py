@@ -2,9 +2,10 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import ldap3
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session, flash, url_for
 from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE, Tls
 from dotenv import load_dotenv
+from functools import wraps
 
 load_dotenv()
 
@@ -109,20 +110,38 @@ def change_ad_password(username, new_password):
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
+        username = request.form.get('username')
+        password = request.form.get('password')
         
-        logger.info(f"Login attempt for user: {username}")
-        
+        # Проверяем, что поля не пустые
+        if not username or not password:
+            flash('Пожалуйста, заполните все поля', 'error')
+            return render_template('login.html')
+            
+        # Проверяем авторизацию через AD
         if ad_auth(username, password):
+            # Если авторизация успешна, сохраняем username в сессии
             session['username'] = username
-            return redirect('/change_password')
+            return redirect(url_for('change_password'))
         else:
-            logger.warning(f"Invalid credentials for user: {username}")
-            flash('Invalid credentials')
+            # Если авторизация не удалась, показываем ошибку
+            flash('Неверное имя пользователя или пароль', 'error')
+            return render_template('login.html')
+            
     return render_template('login.html')
 
+# Добавляем декоратор для проверки авторизации
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Защищаем страницу смены пароля
 @app.route('/change_password', methods=['GET', 'POST'])
+@login_required
 def change_password():
     if 'username' not in session:
         return redirect('/')
