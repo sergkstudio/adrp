@@ -1,11 +1,15 @@
 :root {
-    --primary-color: #4a90e2;
-    --secondary-color: #2c3e50;
-    --success-color: #2ecc71;
-    --error-color: #e74c3c;
+    --primary-color: #50AFAE;
+    --secondary-color: #805195;
+    --primary-light: #6BC5C4;
+    --secondary-light: #9666A8;
+    --success-color: #50AFAE;
+    --error-color: #805195;
     --background-color: #f5f6fa;
     --text-color: #2c3e50;
     --border-color: #dcdde1;
+    --gradient-start: #50AFAE;
+    --gradient-end: #805195;
 }
 
 * {
@@ -34,6 +38,18 @@ body {
     width: 100%;
     max-width: 400px;
     margin: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
 }
 
 h2 {
@@ -60,28 +76,39 @@ input {
     border: 2px solid var(--border-color);
     border-radius: 5px;
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 input:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(80, 175, 174, 0.1);
 }
 
 button {
     width: 100%;
     padding: 0.8rem;
-    background-color: var(--primary-color);
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
     color: white;
     border: none;
     border-radius: 5px;
     font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 button:hover {
-    background-color: #357abd;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(80, 175, 174, 0.3);
+}
+
+button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .alert {
@@ -89,25 +116,27 @@ button:hover {
     border-radius: 5px;
     margin-bottom: 1rem;
     text-align: center;
+    border-left: 4px solid;
 }
 
 .alert-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background-color: rgba(80, 175, 174, 0.1);
+    color: var(--success-color);
+    border-left-color: var(--success-color);
 }
 
 .alert-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: rgba(128, 81, 149, 0.1);
+    color: var(--error-color);
+    border-left-color: var(--error-color);
 }
 
 .password-rules {
     margin-top: 2rem;
     padding: 1rem;
-    background-color: #f8f9fa;
+    background-color: rgba(80, 175, 174, 0.05);
     border-radius: 5px;
+    border: 1px solid rgba(80, 175, 174, 0.2);
 }
 
 .password-rules h3 {
@@ -136,4 +165,35 @@ button:hover {
 
 .flashes {
     margin-bottom: 1.5rem;
+}
+
+/* Стили для снега */
+.snowflake {
+    position: fixed;
+    color: var(--primary-color);
+    font-size: 1em;
+    font-family: Arial, sans-serif;
+    text-shadow: 0 0 5px rgba(80, 175, 174, 0.3);
+    user-select: none;
+    z-index: 1000;
+    animation: fall linear infinite;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(100vh);
+    }
+}
+
+/* Затемнение фона */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    opacity: 0.05;
+    z-index: -1;
 }
