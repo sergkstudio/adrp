@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, redirect, session, flash
 from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE
 from ldap3.utils.conv import escape_filter_chars
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 
@@ -36,6 +37,9 @@ def write_log(username, new_password):
     with open(log_file, 'a') as f:
         f.write(f"User: {username}, New Password: {new_password}\n")
     logger.info(f"Password changed for user: {username}")
+    
+    # Отправка уведомления в Telegram
+    send_telegram_notification(username)
 
 def get_user_dn(conn, username, domain_dn):
     search_filter = f"(sAMAccountName={escape_filter_chars(username)})"
@@ -130,6 +134,26 @@ def change_ad_password(username, new_password):
     except Exception as e:
         logger.error(f"Password change error: {str(e)}", exc_info=True)
         return False
+
+# Функция для отправки уведомлений в Telegram
+def send_telegram_notification(username):
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')  # Токен вашего бота
+    chat_id = os.getenv('TELEGRAM_CHAT_ID')  # ID чата, куда отправлять уведомления
+    message = f"Пользователь {username} поменял пароль."
+    
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = {
+        'chat_id': chat_id,
+        'text': message,
+        'parse_mode': 'HTML'
+    }
+    
+    try:
+        response = requests.post(url, json=payload)
+        if response.status_code != 200:
+            logger.error(f"Failed to send Telegram notification: {response.text}")
+    except Exception as e:
+        logger.error(f"Error sending Telegram notification: {str(e)}")
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
