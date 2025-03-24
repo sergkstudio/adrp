@@ -9,12 +9,12 @@
 <body>
     <div class="container">
         <h1>Логи изменений паролей</h1>
-        <table style="width: 75%;">
+        <table style="width: 90%; margin: 20px auto; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th>Дата и время</th>
-                    <th>Пользователь</th>
-                    <th>Новый пароль</th>
+                    <th style="border: 1px solid var(--border-color); padding: 10px; background-color: var(--primary-light);">Дата и время</th>
+                    <th style="border: 1px solid var(--border-color); padding: 10px; background-color: var(--primary-light);">Пользователь</th>
+                    <th style="border: 1px solid var(--border-color); padding: 10px; background-color: var(--primary-light);">Новый пароль</th>
                 </tr>
             </thead>
             <tbody>
@@ -23,9 +23,9 @@
                     {% if log_parts|length > 1 %}
                         {% set user_info = log_parts[1].split(', ') %}
                         <tr>
-                            <td>{{ log_parts[0] }}</td>
-                            <td>{{ user_info[0].split(': ')[1] if user_info|length > 0 else 'Неизвестно' }}</td>
-                            <td>{{ user_info[1].split(': ')[1] if user_info|length > 1 else 'Неизвестно' }}</td>
+                            <td style="border: 1px solid var(--border-color); padding: 10px;">{{ log_parts[0] }}</td>
+                            <td style="border: 1px solid var(--border-color); padding: 10px;">{{ user_info[0].split(': ')[1] if user_info|length > 0 else 'Неизвестно' }}</td>
+                            <td style="border: 1px solid var(--border-color); padding: 10px;">{{ user_info[1].split(': ')[1] if user_info|length > 1 else 'Неизвестно' }}</td>
                         </tr>
                     {% endif %}
                 {% endfor %}
