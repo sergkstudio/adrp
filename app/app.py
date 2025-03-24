@@ -48,7 +48,7 @@ def ad_auth(username, password):
         logger.debug(f"Trying to bind with DN: {user_dn}")
 
         conn = Connection(server, user=user_dn, password=password)
-        conn.start_tls()
+#        conn.start_tls()
         
         # Выполняем привязку и проверяем результат
         if conn.bind():
@@ -81,7 +81,7 @@ def change_ad_password(username, new_password):
         logger.debug(f"Connecting with admin DN: {admin_dn}")
         
         conn = Connection(server, user=admin_dn, password=admin_password)
-        conn.start_tls()
+#        conn.start_tls()
         
         if not conn.bind():
             logger.error(f"Bind failed: {conn.result}")
