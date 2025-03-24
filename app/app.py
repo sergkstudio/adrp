@@ -36,76 +36,66 @@ def write_log(username, new_password):
         f.write(f"User: {username}, New Password: {new_password}\n")
     logger.info(f"Password changed for user: {username}")
 
-def ad_auth(username, password):
-    server_address = os.getenv('AD_SERVER')
-    domain_dn = os.getenv('DOMAIN_DN')
-    logger.debug(f"Attempting authentication for: {username}")
-    logger.debug(f"AD_SERVER: {server_address}, DOMAIN_DN: {domain_dn}")
-
-    try:
-        server = Server(server_address, get_info=ALL)
-        user_dn = f"CN={username},{domain_dn}"
-        logger.debug(f"Trying to bind with DN: {user_dn}")
-
-        conn = Connection(server, user=user_dn, password=password)
-        conn.start_tls()
-        
-        # Выполняем привязку и проверяем результат
-        if conn.bind():
-            logger.info(f"Successful authentication for: {username}")
-            return True
-        
-        logger.error(f"Authentication failed for: {username}. Response: {conn.result}")
-        return False
-        
-    except Exception as e:
-        logger.error(f"Authentication error for {username}: {str(e)}", exc_info=True)
-        return False
-    finally:
-        if 'conn' in locals() and conn.bound:
-            conn.unbind()
-
-def change_ad_password(username, new_password):
+def get_user_dn(username):
+    """Получает distinguishedName пользователя по sAMAccountName"""
     server_address = os.getenv('AD_SERVER')
     domain_dn = os.getenv('DOMAIN_DN')
     admin_user = os.getenv('ADMIN_USER')
     admin_password = os.getenv('ADMIN_PASSWORD')
 
-    logger.debug(f"Attempting password change for: {username}")
-    
     try:
         server = Server(server_address)
-        admin_dn = f"CN={admin_user},{domain_dn}"
-        user_dn = f"CN={username},{domain_dn}"
+        conn = Connection(server, user=f"{admin_user}@{domain_dn}", password=admin_password, auto_bind=True)
         
-        logger.debug(f"Connecting with admin DN: {admin_dn}")
+        conn.search(domain_dn, f"(sAMAccountName={username})", attributes=['distinguishedName'])
         
-        conn = Connection(server, user=admin_dn, password=admin_password)
-        conn.start_tls()
-        
-        if not conn.bind():
-            logger.error(f"Bind failed: {conn.result}")
-            return False
+        if conn.entries:
+            return conn.entries[0].distinguishedName.value
+        else:
+            logger.error(f"User {username} not found in AD")
+            return None
+    except Exception as e:
+        logger.error(f"Error retrieving DN for {username}: {str(e)}", exc_info=True)
+        return None
 
-        logger.debug(f"Connected as admin: {admin_dn}")
-        
+def ad_auth(username, password):
+    """Аутентификация пользователя через sAMAccountName"""
+    user_dn = get_user_dn(username)
+    if not user_dn:
+        return False
+
+    try:
+        server = Server(os.getenv('AD_SERVER'))
+        conn = Connection(server, user=user_dn, password=password, auto_bind=True)
+        logger.info(f"Successful authentication for: {username}")
+        return True
+    except Exception as e:
+        logger.error(f"Authentication failed for {username}: {str(e)}")
+        return False
+
+def change_ad_password(username, new_password):
+    """Смена пароля через sAMAccountName"""
+    user_dn = get_user_dn(username)
+    if not user_dn:
+        return False
+
+    server_address = os.getenv('AD_SERVER')
+    admin_user = os.getenv('ADMIN_USER')
+    admin_password = os.getenv('ADMIN_PASSWORD')
+
+    try:
+        server = Server(server_address)
+        conn = Connection(server, user=f"{admin_user}@{os.getenv('DOMAIN_DN')}", password=admin_password, auto_bind=True)
+
         unicode_password = f'"{new_password}"'.encode('utf-16-le')
-        # Исправлено здесь ▼
         changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])]}
-        
-        logger.debug(f"Attempting password modification for: {user_dn}")
-        
+
         if conn.modify(user_dn, changes):
             logger.info(f"Password changed successfully for: {username}")
             return True
-        
+
         logger.error(f"Password change failed for: {username}. Response: {conn.result}")
         return False
-            
-    except Exception as e:
-        logger.error(f"Password change error for {username}: {str(e)}", exc_info=True)
-        return False
-            
     except Exception as e:
         logger.error(f"Password change error for {username}: {str(e)}", exc_info=True)
         return False
