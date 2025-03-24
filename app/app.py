@@ -96,11 +96,15 @@ def change_ad_password(username, new_password):
     admin_password = os.getenv('ADMIN_PASSWORD')
     
     try:
-        server = Server(server_address)
-        domain = domain_dn.replace('DC=', '').replace(',', '.').lower()
+        server = Server(server_address, get_info=ALL)
+        admin_dn = f"CN={admin_user},{domain_dn}"
+        user_dn = f"CN={username},{domain_dn}"
         
-        # Подключение администратора
-        admin_conn = Connection(server, user=f"{admin_user}@{domain}", password=admin_password)
+        logger.debug(f"Connecting with admin DN: {admin_dn}")
+        
+        # Подключение администратора для поиска пользователя
+        admin_conn = Connection(server, user=admin_dn, password=admin_password)
+        admin_conn.start_tls()
         if not admin_conn.bind():
             logger.error(f"Admin bind failed: {admin_conn.result}")
             return False
