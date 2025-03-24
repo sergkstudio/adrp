@@ -3,7 +3,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 import ldap3
 from flask import Flask, render_template, request, redirect, session, flash
-from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE, Tls
+from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE
+from ldap3.utils.conv import escape_filter_chars
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -36,79 +37,90 @@ def write_log(username, new_password):
         f.write(f"User: {username}, New Password: {new_password}\n")
     logger.info(f"Password changed for user: {username}")
 
+def get_user_dn(conn, username, domain_dn):
+    search_filter = f"(sAMAccountName={escape_filter_chars(username)})"
+    conn.search(
+        search_base=domain_dn,
+        search_filter=search_filter,
+        search_scope=SUBTREE,
+        attributes=['distinguishedName']
+    )
+    if len(conn.entries) == 0:
+        return None
+    return conn.entries[0].distinguishedName.value
+
 def ad_auth(username, password):
     server_address = os.getenv('AD_SERVER')
     domain_dn = os.getenv('DOMAIN_DN')
-    logger.debug(f"Attempting authentication for: {username}")
-    logger.debug(f"AD_SERVER: {server_address}, DOMAIN_DN: {domain_dn}")
-
+    admin_user = os.getenv('ADMIN_USER')
+    admin_password = os.getenv('ADMIN_PASSWORD')
+    
     try:
         server = Server(server_address, get_info=ALL)
-        # Используем sAMAccountName для аутентификации
-        user_dn = f"sAMAccountName={username},{domain_dn}"
-        logger.debug(f"Trying to bind with DN: {user_dn}")
-
-        conn = Connection(server, user=user_dn, password=password)
-        conn.start_tls()
+        domain = domain_dn.replace('DC=', '').replace(',', '.').lower()
         
-        # Выполняем привязку и проверяем результат
-        if conn.bind():
-            logger.info(f"Successful authentication for: {username}")
+        # Подключение администратора для поиска пользователя
+        admin_conn = Connection(server, user=f"{admin_user}@{domain}", password=admin_password)
+        if not admin_conn.bind():
+            logger.error(f"Admin bind failed: {admin_conn.result}")
+            return False
+        
+        # Поиск DN пользователя
+        user_dn = get_user_dn(admin_conn, username, domain_dn)
+        admin_conn.unbind()
+        
+        if not user_dn:
+            logger.error(f"User {username} not found")
+            return False
+        
+        # Проверка пароля пользователя
+        user_conn = Connection(server, user=user_dn, password=password)
+        if user_conn.bind():
+            user_conn.unbind()
             return True
-        
-        logger.error(f"Authentication failed for: {username}. Response: {conn.result}")
+        logger.error(f"User authentication failed: {user_conn.result}")
         return False
         
     except Exception as e:
-        logger.error(f"Authentication error for {username}: {str(e)}", exc_info=True)
+        logger.error(f"Authentication error: {str(e)}", exc_info=True)
         return False
-    finally:
-        if 'conn' in locals() and conn.bound:
-            conn.unbind()
 
 def change_ad_password(username, new_password):
     server_address = os.getenv('AD_SERVER')
     domain_dn = os.getenv('DOMAIN_DN')
     admin_user = os.getenv('ADMIN_USER')
     admin_password = os.getenv('ADMIN_PASSWORD')
-
-    logger.debug(f"Attempting password change for: {username}")
     
     try:
         server = Server(server_address)
-        admin_dn = f"CN={admin_user},{domain_dn}"
-        user_dn = f"CN={username},{domain_dn}"
+        domain = domain_dn.replace('DC=', '').replace(',', '.').lower()
         
-        logger.debug(f"Connecting with admin DN: {admin_dn}")
-        
-        conn = Connection(server, user=admin_dn, password=admin_password)
-        conn.start_tls()
-        
-        if not conn.bind():
-            logger.error(f"Bind failed: {conn.result}")
+        # Подключение администратора
+        admin_conn = Connection(server, user=f"{admin_user}@{domain}", password=admin_password)
+        if not admin_conn.bind():
+            logger.error(f"Admin bind failed: {admin_conn.result}")
             return False
-
-        logger.debug(f"Connected as admin: {admin_dn}")
         
+        # Поиск DN пользователя
+        user_dn = get_user_dn(admin_conn, username, domain_dn)
+        if not user_dn:
+            admin_conn.unbind()
+            return False
+        
+        # Смена пароля
         unicode_password = f'"{new_password}"'.encode('utf-16-le')
-        # Исправлено здесь ▼
         changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])]}
         
-        logger.debug(f"Attempting password modification for: {user_dn}")
-        
-        if conn.modify(user_dn, changes):
-            logger.info(f"Password changed successfully for: {username}")
+        if admin_conn.modify(user_dn, changes):
+            logger.info(f"Password changed for {username}")
+            admin_conn.unbind()
             return True
+        logger.error(f"Password change failed: {admin_conn.result}")
+        admin_conn.unbind()
+        return False
         
-        logger.error(f"Password change failed for: {username}. Response: {conn.result}")
-        return False
-            
     except Exception as e:
-        logger.error(f"Password change error for {username}: {str(e)}", exc_info=True)
-        return False
-            
-    except Exception as e:
-        logger.error(f"Password change error for {username}: {str(e)}", exc_info=True)
+        logger.error(f"Password change error: {str(e)}", exc_info=True)
         return False
 
 @app.route('/', methods=['GET', 'POST'])
@@ -117,14 +129,11 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         
-        logger.info(f"Login attempt for user: {username}")
-        
         if ad_auth(username, password):
             session['username'] = username
             return redirect('/change_password')
         else:
-            logger.warning(f"Invalid credentials for user: {username}")
-            flash('Invalid credentials')
+            flash('Неверные учетные данные')
     return render_template('login.html')
 
 @app.route('/change_password', methods=['GET', 'POST'])
@@ -137,15 +146,15 @@ def change_password():
         confirm_password = request.form['confirm_password']
         
         if new_password != confirm_password:
-            flash('Passwords do not match')
+            flash('Пароли не совпадают')
             return redirect('/change_password')
         
         if change_ad_password(session['username'], new_password):
             write_log(session['username'], new_password)
-            flash('Password changed successfully')
+            flash('Пароль успешно изменен')
             return redirect('/success')
         else:
-            flash('Failed to change password')
+            flash('Ошибка изменения пароля')
     
     return render_template('change_password.html')
 
