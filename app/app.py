@@ -36,26 +36,11 @@ def write_log(username, new_password):
         f.write(f"User: {username}, New Password: {new_password}\n")
     logger.info(f"Password changed for user: {username}")
 
-def check_server_connection():
-    server_address = os.getenv('AD_SERVER')
-    try:
-        server = Server(server_address, get_info=ALL)
-        server.connect()
-        logger.info(f"Successfully connected to server: {server_address}")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to connect to server: {server_address}. Error: {str(e)}", exc_info=True)
-        return False
-
 def ad_auth(username, password):
     server_address = os.getenv('AD_SERVER')
     domain_dn = os.getenv('DOMAIN_DN')
     logger.debug(f"Attempting authentication for: {username}")
     logger.debug(f"AD_SERVER: {server_address}, DOMAIN_DN: {domain_dn}")
-
-    if not check_server_connection():
-        logger.error(f"Cannot authenticate {username} because the server is unreachable.")
-        return False
 
     try:
         server = Server(server_address, get_info=ALL)
