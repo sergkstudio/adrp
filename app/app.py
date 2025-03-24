@@ -100,7 +100,7 @@ def change_ad_password(username, new_password):
             return False
 
         unicode_password = f'"{new_password}"'.encode('utf-16-le')
-        changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password])}
+        changes = {'unicodePwd': [(MODIFY_REPLACE, [unicode_password)]}
 
         if conn.modify(user_dn, changes):
             logger.info(f"Password changed for {username}")
