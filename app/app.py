@@ -57,10 +57,14 @@ def ad_auth(username, password):
     
     try:
         server = Server(server_address, get_info=ALL)
-        domain = domain_dn.replace('DC=', '').replace(',', '.').lower()
+        admin_dn = f"CN={admin_user},{domain_dn}"
+        user_dn = f"CN={username},{domain_dn}"
+        
+        logger.debug(f"Connecting with admin DN: {admin_dn}")
         
         # Подключение администратора для поиска пользователя
-        admin_conn = Connection(server, user=f"{admin_user}@{domain}", password=admin_password)
+        admin_conn = Connection(server, user=admin_dn, password=admin_password)
+        admin_conn.start_tls()
         if not admin_conn.bind():
             logger.error(f"Admin bind failed: {admin_conn.result}")
             return False
