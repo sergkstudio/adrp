@@ -53,6 +53,10 @@ def ad_auth(username, password):
     logger.debug(f"Attempting authentication for: {username}")
     logger.debug(f"AD_SERVER: {server_address}, DOMAIN_DN: {domain_dn}")
 
+    if not check_server_connection():
+        logger.error(f"Cannot authenticate {username} because the server is unreachable.")
+        return False
+
     try:
         server = Server(server_address, get_info=ALL)
         user_dn = f"CN={username},{domain_dn}"
