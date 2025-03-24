@@ -4,31 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админка</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Логи изменений паролей</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Дата и время</th>
-                <th>Пользователь</th>
-                <th>Новый пароль</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in logs %}
-                {% set log_parts = log.split(' - ') %}
-                {% if log_parts|length > 1 %}
-                    {% set user_info = log_parts[1].split(', ') %}
-                    <tr>
-                        <td>{{ log_parts[0] }}</td>
-                        <td>{{ user_info[1] if user_info|length > 1 else 'Неизвестно' }}</td>
-                        <td>{{ user_info[2] if user_info|length > 2 else 'Неизвестно' }}</td>
-                    </tr>
-                {% endif %}
-            {% endfor %}
-        </tbody>
-    </table>
-    <a href="/">Назад</a>
+    <div class="container">
+        <h1>Логи изменений паролей</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата и время</th>
+                    <th>Пользователь</th>
+                    <th>Новый пароль</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                    {% set log_parts = log.split(' - ') %}
+                    {% if log_parts|length > 1 %}
+                        {% set user_info = log_parts[1].split(', ') %}
+                        <tr>
+                            <td>{{ log_parts[0] }}</td>
+                            <td>{{ user_info[1] if user_info|length > 1 else 'Неизвестно' }}</td>
+                            <td>{{ user_info[2] if user_info|length > 2 else 'Неизвестно' }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="/" class="button">Назад</a>
+    </div>
 </body>
 </html>
