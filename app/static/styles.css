@@ -167,24 +167,6 @@ button:disabled {
     margin-bottom: 1.5rem;
 }
 
-/* Стили для снега */
-.snowflake {
-    position: fixed;
-    color: var(--primary-color);
-    font-size: 1em;
-    font-family: Arial, sans-serif;
-    text-shadow: 0 0 5px rgba(80, 175, 174, 0.3);
-    user-select: none;
-    z-index: 1000;
-    animation: fall linear infinite;
-}
-
-@keyframes fall {
-    to {
-        transform: translateY(100vh);
-    }
-}
-
 /* Затемнение фона */
 body::before {
     content: '';
