@@ -17,11 +17,15 @@
         </thead>
         <tbody>
             {% for log in logs %}
-                <tr>
-                    <td>{{ log.split(' - ')[0] }}</td>
-                    <td>{{ log.split(' - ')[1].split(', ')[1] }}</td>
-                    <td>{{ log.split(' - ')[1].split(', ')[2] }}</td>
-                </tr>
+                {% set log_parts = log.split(' - ') %}
+                {% if log_parts|length > 1 %}
+                    {% set user_info = log_parts[1].split(', ') %}
+                    <tr>
+                        <td>{{ log_parts[0] }}</td>
+                        <td>{{ user_info[1] if user_info|length > 1 else 'Неизвестно' }}</td>
+                        <td>{{ user_info[2] if user_info|length > 2 else 'Неизвестно' }}</td>
+                    </tr>
+                {% endif %}
             {% endfor %}
         </tbody>
     </table>
