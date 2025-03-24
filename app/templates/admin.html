@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка</title>
+</head>
+<body>
+    <h1>Логи изменений паролей</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Дата и время</th>
+                <th>Пользователь</th>
+                <th>Новый пароль</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+                <tr>
+                    <td>{{ log.split(' - ')[0] }}</td>
+                    <td>{{ log.split(' - ')[1].split(', ')[1] }}</td>
+                    <td>{{ log.split(' - ')[1].split(', ')[2] }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="/">Назад</a>
+</body>
+</html>

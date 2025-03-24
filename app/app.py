@@ -7,6 +7,7 @@ from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE
 from ldap3.utils.conv import escape_filter_chars
 from dotenv import load_dotenv
 import requests
+from datetime import datetime
 
 load_dotenv()
 
@@ -34,8 +35,9 @@ app.secret_key = os.urandom(24)
 def write_log(username, new_password):
     log_file = os.getenv('LOG_FILE')
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     with open(log_file, 'a') as f:
-        f.write(f"User: {username}, New Password: {new_password}\n")
+        f.write(f"{timestamp} - User: {username}, New Password: {new_password}\n")
     logger.info(f"Password changed for user: {username}")
     
     # Отправка уведомления в Telegram
@@ -196,6 +198,24 @@ def success():
         return redirect('/')
     username = session.pop('username')
     return render_template('success.html', username=username)
+
+@app.route('/admin')
+def admin():
+    if 'username' not in session or session['username'] != os.getenv('ADMIN_USER'):
+        flash('Доступ запрещен')
+        return redirect('/')
+    
+    log_file = os.getenv('LOG_FILE')
+    logs = []
+    
+    try:
+        with open(log_file, 'r') as f:
+            logs = f.readlines()
+    except Exception as e:
+        logger.error(f"Error reading log file: {str(e)}")
+        flash('Ошибка при чтении логов')
+    
+    return render_template('admin.html', logs=logs)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
