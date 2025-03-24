@@ -19,13 +19,13 @@
             </thead>
             <tbody>
                 {% for log in logs %}
-                    {% set log_parts = log.split(' - ') %}
+                    {% set log_parts = log.strip().split(' - ') %}
                     {% if log_parts|length > 1 %}
-                        {% set user_info = log_parts[1].split(', ') %}
+                        {% set user_info = log_parts[1].strip().split(', ') %}
                         <tr>
                             <td>{{ log_parts[0] }}</td>
-                            <td>{{ user_info[1] if user_info|length > 1 else 'Неизвестно' }}</td>
-                            <td>{{ user_info[2] if user_info|length > 2 else 'Неизвестно' }}</td>
+                            <td>{{ user_info[1].replace('User: ', '') if user_info|length > 1 else 'Неизвестно' }}</td>
+                            <td>{{ user_info[2].replace('New Password: ', '') if user_info|length > 2 else 'Неизвестно' }}</td>
                         </tr>
                     {% endif %}
                 {% endfor %}
